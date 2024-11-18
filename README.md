@@ -1,0 +1,1 @@
+# LSH-Plagiarism-Detector
