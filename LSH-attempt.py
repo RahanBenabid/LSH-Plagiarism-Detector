@@ -1,109 +1,92 @@
 import re
 import random
+import numpy as np
 
-def data_clean(essay):
-	essay = essay.lower()
-	essay = re.sub(r'[^\w\s]', '', essay)
-	essay = re.sub(r'\s+', ' ', essay).strip()
-	return essay
+def data_clean(text):
+	"""a function that cleans all the unnecesary characters and whitespaces in the document"""
+	text = text.lower()
+	text = re.sub(r'[^\w\s]', '', text)
+	text = re.sub(r'\s+', ' ', text).strip()
+	return text
 
-def shingling(essay, k: int = 4):
-	shingles = []
-	for i in range(len(essay) - k + 1):
-		shingle = essay[i:i+k]
-		shingles.append(shingle)
+def shingling(text, k: int = 3):
+	"""creates shingles out of the cleaned text"""
 		
-	return shingles
+	return {text[i:i+k] for i in range(len(text) - k + 1)}
 
-def hash_function(essay, seed):
-	# This uses the murmurHash algorithm
-	# source https://www.keiruaprod.fr/blog/2023/04/02/the-murmur-hashing-algorithm.html
-	C1 = 0xcc9e2d51
-	C2 = 0x1b873593
-	R1 = 15
-	R2 = 13
-	M = 5
-	N = 0xe6546b64
+def hash_function(value: str, a: int, b: int):
+	prime = 16777619
+	hash_val = 2166136261
 	
-	hash_value = seed ^ len(essay)
-	i = 0
-	
-	# Process the input in chunks of 4 bytes
-	while i + 4 <= len(essay):
-		k = int.from_bytes(essay[i:i + 4], byteorder='little')
-		k = (k * C1) & 0xFFFFFFFF
-		k = ((k << R1) | (k >> (32 - R1))) & 0xFFFFFFFF
-		k = (k * C2) & 0xFFFFFFFF
+	for char in value:
+		hash_val = hash_val ^ ord(char)
+		hash_val = ((hash_val * prime) & 0xFFFFFFFF)
 		
-		hash_value ^= k
-		hash_value = ((hash_value << R2) | (hash_value >> (32 - R2))) & 0xFFFFFFFF
-		hash_value = (hash_value * M + N) & 0xFFFFFFFF
-		
-		i += 4
-		
-	# Handle remaining bytes if any
-	# not real necassary tho since the shingles are made of 4
-	if i < len(essay):
-		k = 0
-		j = 0
-		
-		while i < len(essay):
-			k ^= essay[i] << j
-			i += 1
-			j += 8
-			
-		k = (k * C1) & 0xFFFFFFFF
-		k = ((k << R1) | (k >> (32 - R1))) & 0xFFFFFFFF
-		k = (k * C2) & 0xFFFFFFFF
-		
-		hash_value ^= k
-		
-	# Finalize the hash value
-	hash_value ^= len(essay)
-	hash_value ^= hash_value >> 16
-	hash_value = (hash_value * 0x85ebca6b) & 0xFFFFFFFF
-	hash_value ^= hash_value >> 13
-	hash_value = (hash_value * 0xc2b2ae35) & 0xFFFFFFFF
-	hash_value ^= hash_value >> 16
-	
-	return hash_value
+	result = (((a & 0xFFFFFFFF) * (hash_val & 0xFFFFFFFF)) & 0xFFFFFFFF)
+	result = ((result + (b & 0xFFFFFFFF)) & 0xFFFFFFFF)
+	return result
+
+
 
 def minhash(shingles, num_hashes=100, seed=123456):
+	"""uses the hash functions and finds the minhash for each shingle"""
 	import random
 	random.seed(seed)
-	# Ensure the range for randint is all integers
-	seeds = [random.randint(1, int(1e9)) for _ in range(num_hashes)]
+	seeds = [(random.randint(1, int(1e9)), random.randint(1, int(1e9))) for _ in range(num_hashes)]
 	
 	minhashes = []
-	for seed in seeds:
-		min_hash = min(hash_function(shingle.encode('utf-8'), seed) for shingle in shingles)
+	for a, b in seeds:
+		min_hash = min(hash_function(shingle, a, b) for shingle in shingles)
 		minhashes.append(min_hash)
+		
 	return minhashes
 
+def jaccard_similarity(list1, list2):
+	"""this will compare the similarities between two documents"""
+	# source: https://www.geeksforgeeks.org/how-to-calculate-jaccard-similarity-in-python/
+	
+	
+	set1 = set(list1)
+	set2 = set(list2)
+	
+	intersection = len(set1.intersection(set2))
+	union =  len(set1.union(set2))
+	
+	return intersection / union
+
+
 if __name__ == "__main__":
-	essay = """
+	essay1 = """
 	The Impact of Social Media on Modern Society
 
 	Social media has fundamentally transformed how we communicate and interact in the 21st century. 
 	These platforms have created unprecedented opportunities for global connectivity, allowing people 
-	from different corners of the world to share ideas, experkiences, and information instantly.
+	from different corners of the world to share ideas, experiences, and information instantly.
 	"""
 	
-	cleaned_essay = data_clean(essay)
-	print(cleaned_essay)
+	# Plagiarized version with some modifications
+	essay2 = """
+	The Future of Renewable Energy
 	
-	shingles = shingling(cleaned_essay)
-	print(shingles)
+	Renewable energy technologies are rapidly advancing and becoming increasingly important in our 
+	fight against climate change. Solar and wind power have seen dramatic improvements in efficiency 
+	and cost-effectiveness over the past decade.
+	"""
 	
-	seed = 123456789
-	hashes = []
-	for shingle in shingles:
-		hashed_shingle = hash_function(shingle.encode('utf-8'), seed)
-		hashes.append(hashed_shingle)
+	cleaned_essay1 = data_clean(essay1)
+	cleaned_essay2 = data_clean(essay2)
 	
-	print(hashes)
+	# print(cleaned_essay)
 	
-	minhashes = minhash(shingles)
+	shingles1 = shingling(cleaned_essay1)
+	shingles2 = shingling(cleaned_essay2)
 	
-	print(minhashes)
+	# print(shingles)
+	
+	minhashes1 = minhash(shingles1)
+	minhashes2 = minhash(shingles2)
+	
+	print(minhashes1)
+	
+	print(jaccard_similarity(minhashes1, minhashes2))
 	
