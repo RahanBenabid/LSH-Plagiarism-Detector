@@ -58,3 +58,5 @@ tasks.json
 
 /data/*
 document-similarity-lsh.py
+
+LSH-attempt.py

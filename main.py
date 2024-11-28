@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Set, Dict
 import re
 from collections import defaultdict
+import os
 
 class DocumentSimilarityLSH:
     def __init__(self, num_hash_functions: int = 100, bands: int = 20):
@@ -101,7 +102,7 @@ class DocumentSimilarityLSH:
         
         return matches / len(sig1)
     
-    def find_similar_documents(self, doc_id: str, threshold: float = 0.5) -> Dict[str, float]:
+    def find_similar_documents(self, doc_id: str, threshold: float = 0.1) -> Dict[str, float]:
         """give similar documents according to the threshold"""
         if not 0 <= threshold <= 1:
             raise ValueError("threshold must be between 0 and 1")
@@ -130,54 +131,63 @@ class DocumentSimilarityLSH:
         return dict(sorted(similarities.items(), key=lambda x: x[1], reverse=True))
     
 
-def run_plagiarism_check():
-    # Original essay
-    essay1 = """
-    The Impact of Social Media on Modern Society
-
-    Social media has fundamentally transformed how we communicate and interact in the 21st century. 
-    These platforms have created unprecedented opportunities for global connectivity, allowing people 
-    from different corners of the world to share ideas, experiences, and information instantly.
-    """
+def run_plagiarism_check(main_file_path, documents_dir=None, threshold=0.1):
     
-    # Plagiarized version with some modifications
-    essay2 = """
-    The Future of Renewable Energy
-    
-    Renewable energy technologies are rapidly advancing and becoming increasingly important in our 
-    fight against climate change. Solar and wind power have seen dramatic improvements in efficiency 
-    and cost-effectiveness over the past decade.
-    """
-    
-    # Completely different essay
-    essay3 = """
-    The Effects of Social Media in Today's World
-
-    Social media has fundamentally changed how people communicate and interact in the modern era. 
-    These digital platforms have created new ways for worldwide connectivity, enabling individuals 
-    from different parts of the globe to exchange ideas, experiences, and information instantaneously.
-    """
-    
-    # Initialize LSH system
+    # maek sure the main file exists
+    if not os.path.exists(main_file_path):
+        raise FileNotFoundError(f"main file not found: {main_file_path}")
+        
+    with open(main_file_path, 'r', encoding='utf-8') as f:
+        main_text = f.read()
+        
+    # create an instance of the class
     lsh = DocumentSimilarityLSH()
     
-    # Add documents
-    print("\nAdding documents...")
-    lsh.add_document("essay1", essay1)
-    lsh.add_document("essay2", essay2)
-    lsh.add_document("essay3", essay3)
+    # add the main file
+    lsh.add_document("main", main_text)
     
-    # Compare original essay with others
-    print("\nChecking similarities with Essay 1...")
-    similar_docs = lsh.find_similar_documents("essay1", threshold=0.5)
+    # get all the other documents and add them to find which one is a plagiarism
+    if documents_dir:
+        if not os.path.isdir(documents_dir):
+            raise NotADirectoryError(f"Invalid directory: {documents_dir}")
+            
+        # sort them to avoid any issues
+        text_files = sorted([
+            f for f in os.listdir(documents_dir) 
+            if os.path.isfile(os.path.join(documents_dir, f)) and f.endswith('.txt')
+        ])
+        
+        for idx, filename in enumerate(text_files, 1):
+            file_path = os.path.join(documents_dir, filename)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    doc_text = f.read()
+                    lsh.add_document(f"doc_{idx}", doc_text)
+            except Exception as e:
+                print(f"Error reading {filename}: {e}")
+                
     
-    if similar_docs:
-        print("\nSimilar documents found:")
-        for doc_id, similarity in similar_docs.items():
-            print(f"{doc_id}: {similarity:.2%} similarity")
-    else:
-        print("\nNo significant similarities found.")
+    # call the find_similar_documents function
+    similar_docs = lsh.find_similar_documents("main", threshold=threshold)
+    
+    return similar_docs
+
+def main():
+    try:
+        main_file = 'main.txt'
+        documents_dir = './documents'
+        
+        similar_docs = run_plagiarism_check(main_file, documents_dir)
+        
+        if similar_docs:
+            print("\nSimilar documents found:")
+            for doc_id, similarity in similar_docs.items():
+                print(f"{doc_id}: {similarity:.2%} similarity")
+        else:
+            print("\nNo significant similarities found.")
+            
+    except Exception as e:
+        print(f"Error during plagiarism check: {e}")
         
 if __name__ == "__main__":
-    run_plagiarism_check()
-            
+    main()
