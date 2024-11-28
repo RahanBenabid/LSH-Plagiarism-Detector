@@ -93,7 +93,7 @@ if __name__ == "__main__":
     minhashes1 = minhash(shingles1)
     minhashes2 = minhash(shingles2)
     
-    print(minhashes1)
+    # print(minhashes1)
     
     print(jaccard_similarity(minhashes1, minhashes2))
     
