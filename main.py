@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, './local_modules/')
+
 import numpy as np
 from typing import List, Set, Dict
 import re
@@ -22,7 +25,9 @@ class DocumentSimilarityLSH:
         self.hash_coeff = np.random.randint(1, 2**31-1, size=(num_hash_functions, 2))
         
     def _preprocess_text(self, text: str) -> str:
-        """preprocess text and cleaning it"""
+        """
+        Une fonction qui prend en entrée un texte volumineux et retourne une version nettoyée de celui-ci, en supprimant les espaces superflus, la ponctuation et les caractères indésirables
+        """
         if not isinstance(text, str):
             raise ValueError("Input must be a string")
             
@@ -35,7 +40,9 @@ class DocumentSimilarityLSH:
         return text
     
     def _create_shingles(self, text: str, k: int = 3) -> Set[str]:
-        """create character based shingles"""
+        """
+        Cette fonction génère des “shingles” (ou n-grammes) à partir d’un texte donné. Un shingle est une sous-chaîne de longueur `k` extraite du texte. Cette fonction prend en entrée une chaîne de caractères `text` et un entier `k` qui définit la taille des shingles
+        """
         if k <= 0:
             raise ValueError("Shingle size must be positive")
         
@@ -46,8 +53,12 @@ class DocumentSimilarityLSH:
         return {text[i:i+k] for i in range(len(text) - k + 1)}
     
     def _hash_function(self, value: str, a: int, b: int) -> int:
-        """hash function that uses that murmurhash algorithm"""
-        # we use a prime number to avoid collision, and make sure that different input do not produce the same value
+        """
+        Cette fonction calcule une valeur de hachage pour une chaîne de caractères donnée en utilisant une méthode de hachage basée sur des coefficients a et b
+        source: https://stackoverflow.com/questions/13305290/is-there-a-pure-python-implementation-of-murmurhash
+        on utilise un grand nombre premier pour eviter les collision des entrée differentes, deux intrée differentes de doivent pas generer la meme valeur de hashage
+        """
+        
         prime = 16777619
         hash_val = 2166136261
         
@@ -61,7 +72,10 @@ class DocumentSimilarityLSH:
         return result
     
     def _minhash_signature(self, shingles: Set[str]) -> np.ndarray:
-        """genreate the minhash signature for our set of shingles"""
+        """
+        Cette fonction génère une signature MinHash à partir d’un ensemble de shingles en appelant _hash_function, elle appelle cette fonction plusieurs fois et a chaque fois compare et prends la valeure minimale. La signature MinHash est utilisée pour estimer la similarité entre des ensembles en réduisant leur dimensionnalité (pour une meilleur performance) tout en préservant les propriétés de similarité
+        """
+        
         if not shingles:
             raise ValueError("empty shingle set")
         
@@ -76,7 +90,9 @@ class DocumentSimilarityLSH:
         return signature
     
     def add_document(self, doc_id: str, text: str):
-        """add a doc to the LSH index"""
+        """
+        Cette fontion permet d'ajouter un document à l'index LSH, elle prends en entrée l'ID et le contenue
+        """
         if not text.strip():
             raise ValueError("empty document text")
         if doc_id in self.documents:
@@ -94,16 +110,20 @@ class DocumentSimilarityLSH:
             self.hash_tables[band][band_signature].append(doc_id)
             
     def _jaccard_similarity(self, sig1: np.ndarray, sig2: np.ndarray) -> float:
-        """calculate jaccard similarities between two signatures"""
+        """
+        Calcule la similarite Jaccard entre deux signatures minhash, cette similarité est celle qui decide a quelle points deux documents sonts similaire
+        """
         if len(sig1) != len(sig2):
             raise ValueError("signatures length do not match")
         matches = np.sum(sig1 == sig2)
-        print(f'jaccard sim: {matches / len(sig1)}')
+        # print(f'jaccard sim: {matches / len(sig1)}')
         
         return matches / len(sig1)
     
     def find_similar_documents(self, doc_id: str, threshold: float = 0.1) -> Dict[str, float]:
-        """give similar documents according to the threshold"""
+        """
+        Recherche les documents similaires. Elle compare la signature MinHash du document spécifié avec celles des autres documents et retourne ceux qui dépassent un seuil de similarité définie
+        """
         if not 0 <= threshold <= 1:
             raise ValueError("threshold must be between 0 and 1")
         if doc_id not in self.documents:
@@ -180,11 +200,11 @@ def main():
         similar_docs = run_plagiarism_check(main_file, documents_dir)
         
         if similar_docs:
-            print("\nSimilar documents found:")
+            print("Documents similaires trouvé:")
             for doc_id, similarity in similar_docs.items():
-                print(f"{doc_id}: {similarity:.2%} similarity")
+                print(f"{doc_id}: {similarity:.2%} similarité")
         else:
-            print("\nNo significant similarities found.")
+            print("\n aucune similarité trouvé.")
             
     except Exception as e:
         print(f"Error during plagiarism check: {e}")
