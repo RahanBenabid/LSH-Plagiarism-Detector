@@ -75,7 +75,7 @@ struct ContentView: View {
     // Commented out function for sending text to localhost
     /*
     private func sendTextToLocalhost(text: String) {
-        guard let url = URL(string: "http://localhost:3000") else {
+        guard let url = URL(string: "http://127.0.0.1:5000") else {
             print("Invalid URL")
             return
         }

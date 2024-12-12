@@ -2,10 +2,11 @@ import sys
 sys.path.insert(0, './local_modules/')
 
 import numpy as np
-from typing import List, Set, Dict
 import re
-from collections import defaultdict
 import os
+import json
+from typing import List, Set, Dict
+from collections import defaultdict
 
 class DocumentSimilarityLSH:
     def __init__(self, num_hash_functions: int = 100, bands: int = 20):
@@ -120,9 +121,12 @@ class DocumentSimilarityLSH:
         
         return matches / len(sig1)
     
-    def find_similar_documents(self, doc_id: str, threshold: float = 0.1) -> Dict[str, float]:
+    import json
+    
+    def find_similar_documents(self, doc_id: str, threshold: float = 0.1) -> str:
         """
-        Recherche les documents similaires. Elle compare la signature MinHash du document spécifié avec celles des autres documents et retourne ceux qui dépassent un seuil de similarité définie
+        Recherche les documents similaires. Elle compare la signature MinHash du document spécifié avec celles des autres documents et retourne ceux qui dépassent un seuil de similarité définie.
+        Returns a JSON string of similar documents.
         """
         if not 0 <= threshold <= 1:
             raise ValueError("threshold must be between 0 and 1")
@@ -138,7 +142,7 @@ class DocumentSimilarityLSH:
             band_signature = tuple(query_signature[start_idx:end_idx])
             candidates = self.hash_tables[band][band_signature]
             candidate_docs.update(candidates)
-        
+            
         candidate_docs.discard(doc_id)
         
         similarities = {}
@@ -148,7 +152,9 @@ class DocumentSimilarityLSH:
             if similarity >= threshold:
                 similarities[candidate_id] = similarity
                 
-        return dict(sorted(similarities.items(), key=lambda x: x[1], reverse=True))
+        similar_documents = dict(sorted(similarities.items(), key=lambda x: x[1], reverse=True))
+        
+        return json.dumps(similar_documents)
     
 
 def run_plagiarism_check(main_file_path, documents_dir=None, threshold=0.1):
@@ -177,6 +183,7 @@ def run_plagiarism_check(main_file_path, documents_dir=None, threshold=0.1):
             if os.path.isfile(os.path.join(documents_dir, f)) and f.endswith('.txt')
         ])
         
+        
         for idx, filename in enumerate(text_files, 1):
             file_path = os.path.join(documents_dir, filename)
             try:
@@ -197,12 +204,13 @@ def main():
         main_file = 'main.txt'
         documents_dir = './documents'
         
-        similar_docs = run_plagiarism_check(main_file, documents_dir)
+        result_json = run_plagiarism_check(main_file, documents_dir)
+        similar_docs = json.loads(result_json)
+        
         
         if similar_docs:
             print("Documents similaires trouvé:")
-            for doc_id, similarity in similar_docs.items():
-                print(f"{doc_id}: {similarity:.2%} similarité")
+            return result_json
         else:
             print("\n aucune similarité trouvé.")
             
@@ -210,4 +218,5 @@ def main():
         print(f"Error during plagiarism check: {e}")
         
 if __name__ == "__main__":
-    main()
+    similar_json = main()
+    print(similar_json)
