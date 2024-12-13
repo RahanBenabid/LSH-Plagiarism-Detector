@@ -62,3 +62,4 @@ document-similarity-lsh.py
 LSH-attempt.py
 Rapport.md
 **/venv
+**/__pycache__

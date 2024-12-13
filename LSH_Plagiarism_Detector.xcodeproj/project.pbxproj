@@ -24,9 +24,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B6F114712D09FE4F00A903B1 /* LSH_Plagiarism_Detector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LSH_Plagiarism_Detector.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B6F114822D09FE5100A903B1 /* LSH_Plagiarism_DetectorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LSH_Plagiarism_DetectorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		B6F1148C2D09FE5100A903B1 /* LSH_Plagiarism_DetectorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LSH_Plagiarism_DetectorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B69AE3FF2D0B518500CB6398 /* LSH_Plagiarism_Detector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LSH_Plagiarism_Detector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B69AE4002D0B518500CB6398 /* LSH_Plagiarism_DetectorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LSH_Plagiarism_DetectorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B69AE4012D0B518500CB6398 /* LSH_Plagiarism_DetectorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LSH_Plagiarism_DetectorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -78,18 +78,10 @@
 				B6F114732D09FE4F00A903B1 /* LSH_Plagiarism_Detector */,
 				B6F114852D09FE5100A903B1 /* LSH_Plagiarism_DetectorTests */,
 				B6F1148F2D09FE5100A903B1 /* LSH_Plagiarism_DetectorUITests */,
-				B6F114722D09FE4F00A903B1 /* Products */,
+				B69AE3FF2D0B518500CB6398 /* LSH_Plagiarism_Detector.app */,
+				B69AE4002D0B518500CB6398 /* LSH_Plagiarism_DetectorTests.xctest */,
+				B69AE4012D0B518500CB6398 /* LSH_Plagiarism_DetectorUITests.xctest */,
 			);
-			sourceTree = "<group>";
-		};
-		B6F114722D09FE4F00A903B1 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				B6F114712D09FE4F00A903B1 /* LSH_Plagiarism_Detector.app */,
-				B6F114822D09FE5100A903B1 /* LSH_Plagiarism_DetectorTests.xctest */,
-				B6F1148C2D09FE5100A903B1 /* LSH_Plagiarism_DetectorUITests.xctest */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -114,7 +106,7 @@
 			packageProductDependencies = (
 			);
 			productName = LSH_Plagiarism_Detector;
-			productReference = B6F114712D09FE4F00A903B1 /* LSH_Plagiarism_Detector.app */;
+			productReference = B69AE3FF2D0B518500CB6398 /* LSH_Plagiarism_Detector.app */;
 			productType = "com.apple.product-type.application";
 		};
 		B6F114812D09FE5100A903B1 /* LSH_Plagiarism_DetectorTests */ = {
@@ -137,7 +129,7 @@
 			packageProductDependencies = (
 			);
 			productName = LSH_Plagiarism_DetectorTests;
-			productReference = B6F114822D09FE5100A903B1 /* LSH_Plagiarism_DetectorTests.xctest */;
+			productReference = B69AE4002D0B518500CB6398 /* LSH_Plagiarism_DetectorTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		B6F1148B2D09FE5100A903B1 /* LSH_Plagiarism_DetectorUITests */ = {
@@ -160,7 +152,7 @@
 			packageProductDependencies = (
 			);
 			productName = LSH_Plagiarism_DetectorUITests;
-			productReference = B6F1148C2D09FE5100A903B1 /* LSH_Plagiarism_DetectorUITests.xctest */;
+			productReference = B69AE4012D0B518500CB6398 /* LSH_Plagiarism_DetectorUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -198,7 +190,7 @@
 			packageReferences = (
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = B6F114722D09FE4F00A903B1 /* Products */;
+			productRefGroup = B6F114682D09FE4F00A903B1;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
