@@ -10,72 +10,216 @@ struct SimilarityResult: Identifiable, Hashable {
     var id: String { docId }
 }
 
+// A new view to display the file content
+struct FileContentView: View {
+    let fileName: String
+    let fileContent: String
+    let originalText: String  // New parameter
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("File: \(fileName)")
+                .font(.title)
+                .fontWeight(.bold)
+                .padding(.top)
+            
+            Divider()
+            
+            // Original Text Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Original Text")
+                    .font(.headline)
+                    .fontWeight(.semibold) // Ensures boldness matches the "File" style
+                    .font(.system(.body, design: .monospaced))
+                
+                ScrollView {
+                    Text(originalText)
+                        .font(.system(.body, design: .monospaced))
+                        .multilineTextAlignment(.leading)
+                        .padding()
+                }
+                .frame(maxHeight: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+            }
+            .padding(.bottom)
+            
+            // File Content Section (Modified to match "Original Text" style)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("File Content")
+                    .font(.headline)
+                    .fontWeight(.semibold) // Ensures consistent boldness
+                    .font(.system(.body, design: .monospaced))
+                
+                ScrollView {
+                    Text(fileContent)
+                        .font(.system(.body, design: .monospaced))
+                        .multilineTextAlignment(.leading)
+                        .padding()
+                }
+                .frame(maxHeight: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .navigationTitle("File Viewer")
+    }
+}
+
+enum NavigationRoute: Hashable {
+    case fileContent(fileName: String, fileContent: String, originalText: String)
+}
+
 struct ContentView: View {
     @State private var droppedText: String = "Drop your .txt file here"
     @State private var isTargeted: Bool = false
     @State private var isLoading: Bool = false
     @State private var similarityResults: [SimilarityResult] = []
     @State private var executionTime: Double = 0.0
-
+    @State private var selectedFileName: String = ""
+    
+    @State private var fileContent: String = ""  // Stores file content
+    @State private var originalDroppedText: String = ""  // Store original text
+    @State private var navigationRoute: NavigationRoute?
+    
     var body: some View {
-        ZStack {
-            VStack {
-                Text(droppedText)
-                    .font(.system(.body, design: .monospaced))
-                    .padding()
-                    .frame(width: 300, height: 150)
-                    .background(isTargeted ? Color.yellow : Color.gray.opacity(0.2))
-                    .cornerRadius(10)
-                    .onDrop(of: [.fileURL, .text, .utf8PlainText], isTargeted: $isTargeted) { providers in
-                        handleDrop(providers: providers)
-                    }
-                    .animation(.default, value: isTargeted)
-
-                // Results Table
-                if !similarityResults.isEmpty {
-                    VStack {
-                        Text("Similarity Results")
-                            .font(.headline)
-                        
-                        Text(String(format: "Execution Time: %.3f seconds", executionTime))
-                            .font(.subheadline)
-                            .padding(.bottom)
-
-                        // Modern Table implementation
-                        Table(of: SimilarityResult.self) {
-                            TableColumn("Document ID", value: \.docId)
-                            TableColumn("Similarity %") { result in
-                                Text(String(format: "%.2f", result.similarity))
-                                    .foregroundColor(colorForSimilarityScore(result.similarity))
-                            }
-                        } rows: {
-                            ForEach(similarityResults) { result in
-                                TableRow(result)
-                            }
+        NavigationStack {
+            ZStack {
+                VStack {
+                    // Drop Area
+                    Text(droppedText)
+                        .font(.system(.body, design: .monospaced))
+                        .padding()
+                        .frame(width: 500, height: 200)
+                        .background(isTargeted ? Color.yellow : Color.gray.opacity(0.2))
+                        .cornerRadius(10)
+                        .onDrop(of: [.fileURL, .text, .utf8PlainText], isTargeted: $isTargeted) { providers in
+                            handleDrop(providers: providers)
                         }
-                        .frame(minHeight: 200, maxHeight: 300)
+                        .animation(.default, value: isTargeted)
+
+                    // Results Table
+                    if !similarityResults.isEmpty {
+                        VStack {
+                            Text("Similarity Results")
+                                .font(.headline)
+                                .padding()
+                            
+                            Text(String(format: "Execution Time: %.3f seconds", executionTime))
+                                .font(.subheadline)
+                                .padding(.bottom)
+
+                            Table(of: SimilarityResult.self) {
+                                TableColumn("Document ID", value: \.docId)
+                                TableColumn("Similarity %") { result in
+                                    Text(String(format: "%.2f", result.similarity))
+                                        .foregroundColor(colorForSimilarityScore(result.similarity))
+                                }
+                            } rows: {
+                                ForEach(similarityResults) { result in
+                                    TableRow(result)
+                                        .contextMenu {
+                                            Button("Show File") {
+                                                let modifiedFileName = mapFileName(result.docId)
+                                                fetchFileContent(fileName: modifiedFileName)
+                                            }
+                                        }
+                                }
+                            }
+                            .frame(minHeight: 200, maxHeight: 300)
+                            .padding()
+                        }
                         .padding()
                     }
-                    .padding()
+
+                    Spacer()
                 }
+                .padding()
+                .blur(radius: isLoading ? 7 : 0) // Blur the content when loading
+                .disabled(isLoading)
 
-                Spacer()
+                // Loading overlay
+                if isLoading {
+                    Color.black.opacity(0.3)
+                        .edgesIgnoringSafeArea(.all)
+                        .overlay(
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(1.5)
+                        )
+                }
             }
-            .padding()
-            .blur(radius: isLoading ? 7 : 0)
-            .disabled(isLoading)
-
-            // Loading overlay
-            if isLoading {
-                Color.black.opacity(0.3)
-                    .edgesIgnoringSafeArea(.all)
-                    .overlay(
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(1.5)
+            .background(
+                Color.white.opacity(0.3)  // Apply a translucent background
+                    .blur(radius: 10)  // Apply a blur effect
+            )
+            .navigationDestination(item: $navigationRoute) { route in
+                switch route {
+                case .fileContent(let fileName, let fileContent, let originalText):
+                    FileContentView(
+                        fileName: fileName,
+                        fileContent: fileContent,
+                        originalText: originalText
                     )
+                }
             }
         }
+    }
+
+    // Map doc ID (e.g., "doc_1.txt") to "essay1.txt"
+    private func mapFileName(_ docId: String) -> String {
+        if docId.starts(with: "doc_") {
+            let number = docId.dropFirst(4) // Extract the number (e.g., "1")
+            return "essay\(number).txt"
+        }
+        return docId
+    }
+
+    private func fetchFileContent(fileName: String) {
+        // Build the URL with query parameters
+        var components = URLComponents(string: "http://127.0.0.1:5000/read")
+        components?.queryItems = [
+            URLQueryItem(name: "name", value: fileName)
+        ]
+        
+        guard let url = components?.url else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.setValue("close", forHTTPHeaderField: "Connection")
+
+        // Execute the GET request
+        isLoading = true
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    print("Error: \(error.localizedDescription)")
+                    return
+                }
+                if let data = data,
+                   let jsonResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let content = jsonResponse["file_content"] as? String {
+                    
+                    self.selectedFileName = fileName
+                    self.fileContent = content
+                    self.navigationRoute = .fileContent(
+                        fileName: fileName,
+                        fileContent: content,
+                        originalText: originalDroppedText
+                    )
+                } else {
+                    print("Invalid response or no data")
+                }
+            }
+        }.resume()
     }
 
     private func colorForSimilarityScore(_ score: Double) -> Color {
@@ -90,7 +234,7 @@ struct ContentView: View {
             return .green
         }
     }
-
+    
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard !providers.isEmpty else { return false }
         
@@ -117,14 +261,6 @@ struct ContentView: View {
                         }
                         return
                     }
-                    
-                    print("Failed to load drop:")
-                    if let urlError = error {
-                        print("URL error: \(urlError.localizedDescription)")
-                    }
-                    if let stringError = error {
-                        print("String error: \(stringError.localizedDescription)")
-                    }
                 }
             }
         }
@@ -141,17 +277,15 @@ struct ContentView: View {
                 
                 let text = try String(contentsOf: url, encoding: .utf8)
                 self.droppedText = text
-                
                 self.sendTextToLocalhost(text: text)
             } catch {
                 self.droppedText = "Failed to read file: \(error.localizedDescription)"
-                print("File reading error: \(error)")
             }
         }
     }
-    ;
+
     private func sendTextToLocalhost(text: String) {
-        // Reset previous results
+        self.originalDroppedText = text  // Store the original text
         self.similarityResults.removeAll()
         self.isLoading = true
 
@@ -172,44 +306,21 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
 
-                if let error = error {
-                    print("Error sending text: \(error.localizedDescription)")
-                    self.droppedText = "An error occurred while processing the file."
-                    return
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse {
-                    switch httpResponse.statusCode {
-                    case 200:
-                        // Process data as usual
-                        if let data = data {
-                            do {
-                                let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-                                
-                                // Parse execution time as a Double
-                                if let executionTime = json?["execution_time"] as? Double {
-                                    self.executionTime = executionTime
-                                } else if let executionTimeString = json?["execution_time"] as? String,
-                                          let parsedTime = Double(executionTimeString) {
-                                    self.executionTime = parsedTime
-                                }
-                                
-                                // Parse similar documents
-                                if let similarDocs = json?["similar_docs"] as? [String: Double] {
-                                    self.similarityResults = similarDocs
-                                        .map { SimilarityResult(docId: $0.key, similarity: $0.value) }
-                                        .sorted { $0.similarity > $1.similarity }
-                                }
-                            } catch {
-                                print("Error parsing JSON: \(error.localizedDescription)")
-                            }
+                if let data = data {
+                    do {
+                        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                        
+                        if let executionTime = json?["execution_time"] as? Double {
+                            self.executionTime = executionTime
                         }
-                    case 500:
-                        // Handle 500 - No similar documents
-                        self.droppedText = "No similar documents were found."
-                    default:
-                        // Handle other status codes
-                        self.droppedText = "An unexpected server error occurred (Code: \(httpResponse.statusCode))."
+                        
+                        if let similarDocs = json?["similar_docs"] as? [String: Double] {
+                            self.similarityResults = similarDocs
+                                .map { SimilarityResult(docId: $0.key, similarity: $0.value) }
+                                .sorted { $0.similarity > $1.similarity }
+                        }
+                    } catch {
+                        print("Error parsing JSON: \(error.localizedDescription)")
                     }
                 }
             }
