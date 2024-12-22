@@ -152,10 +152,6 @@ struct ContentView: View {
                         )
                 }
             }
-            .background(
-                Color.white.opacity(0.3)  // Apply a translucent background
-                    .blur(radius: 10)  // Apply a blur effect
-            )
             .navigationDestination(item: $navigationRoute) { route in
                 switch route {
                 case .fileContent(let fileName, let fileContent, let originalText):
